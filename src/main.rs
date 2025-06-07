@@ -1,8 +1,13 @@
-use std::env;
-use std::net::IpAddr;
-use std::str::FromStr;
+// use core::num;
+// use std::env;
+use std::io::{self, Write};
+use std::net::{IpAddr, TcpStream};
 use std::process;
+use std::str::FromStr;
+use std::sync::mpsc::{Sender, channel};
+use std::thread;
 
+const MAX: u16 = 65535;
 struct Arguments {
     flag: String,
     ipaddr: IpAddr,
@@ -53,6 +58,27 @@ impl Arguments {
     }
 }
 
+fn scan(tx: Sender<u16>, start_port: u16, addr: IpAddr, num_thread: u16) {
+    let mut port: u16 = start_port + 1;
+    loop {
+        match TcpStream::connect((addr, port)) {
+            Ok(_) => {
+                println!(".");
+                io::stdout().flush().unwrap(); // Ensure the dot is printed immediately
+                // Port is open, send it through the channel
+                tx.send(port).unwrap();
+            }
+            Err(_) => {
+                // Port is closed or filtered, do nothing
+            }
+        }
+        if (MAX - port) <= num_thread {
+            break; // Exit the loop if we have scanned all ports
+        }
+        port += num_thread; // Increment port by the number of threads
+    }
+}
+
 fn main() {
     println!("Hello, world!");
     let args: Vec<String> = std::env::args().collect();
@@ -61,14 +87,35 @@ fn main() {
         if err.contains("help") {
             process::exit(0);
         } else {
-            eprintln!("Usage: {} -j <threads> <ipaddr> or -h for help", program);
+            eprintln!("{} problem parsing arguments: {}", program, err);
             std::process::exit(0);
         }
-        eprintln!("Error: {}", err);
-        std::process::exit(1);
+        // eprintln!("Error: {}", err);
+        // std::process::exit(1);
     });
+    let num_threads = arguments.threads;
+    let (tx, rx) = channel();
+
+    for i in 0..num_threads {
+        let tx = tx.clone();
+        thread::spawn(move || {
+            scan(tx, i, arguments.ipaddr, num_threads);
+        });
+    }
+    let mut out = vec![];
+    drop(tx); // Close the sending end to prevent deadlock
+    for port in rx {
+        out.push(port);
+    }
+    println!("");
+    for v in out {
+        println!("Port {} is open", v);
+    }
 }
 
 // ip_sniffer.exe -h
 // ip_sniffer.exe -j 100 192.168.1.1
 // ip_sniffer 192.168.1.1
+// mpse
+// sync
+// standard and channel
