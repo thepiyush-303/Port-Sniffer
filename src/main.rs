@@ -22,7 +22,7 @@ impl Arguments {
             return Err("Too many arguments provided");
         }
         let f = args[1].clone();
-        if let Ok(IpAddr) = IpAddr::from_str(&f) {
+        if let Ok(_) = IpAddr::from_str(&f) {
             return Ok(Arguments {
                 flag: String::from(""),
                 ipaddr: IpAddr::from_str(&f).unwrap(),
@@ -32,7 +32,7 @@ impl Arguments {
             let flag = args[1].clone();
             if flag.contains("-h") || flag.contains("-help") && args.len() == 2 {
                 println!(
-                    "usage: -j to select how many threads you want -h or -help to show this message"
+                    "usage: -j to select how many threads you want  \n for e.g -- -j 100(number of threads) 192.168.1.1(ip) \n -h or -help to show this message"
                 );
                 return Err("Help requested");
             } else if flag.contains("-h") || flag.contains("-help") {
@@ -77,14 +77,19 @@ fn scan(tx: Sender<u16>, start_port: u16, addr: IpAddr, num_thread: u16) {
         }
         port += num_thread; // Increment port by the number of threads
     }
+    // it will go like if num_thread is 4, it will scan ports like 1, 5, 9, 13, etc.
+    // and then 2, 6, 10, 14, etc. and so on.
+    // This way, each thread scans a different set of ports.
+    // This allows for parallel scanning of ports.
+    // The loop will exit when all ports have been scanned.
 }
 
 fn main() {
-    println!("Hello, world!");
+    // println!("Hello, world!");
     let args: Vec<String> = std::env::args().collect();
     let program = args[0].clone();
     let arguments = Arguments::new(&args).unwrap_or_else(|err| {
-        if err.contains("help") {   
+        if err.contains("help") {
             process::exit(0);
         } else {
             eprintln!("{} problem parsing arguments: {}", program, err);
