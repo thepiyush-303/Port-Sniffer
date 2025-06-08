@@ -84,7 +84,7 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     let program = args[0].clone();
     let arguments = Arguments::new(&args).unwrap_or_else(|err| {
-        if err.contains("help") {
+        if err.contains("help") {   
             process::exit(0);
         } else {
             eprintln!("{} problem parsing arguments: {}", program, err);
@@ -107,15 +107,8 @@ fn main() {
     for port in rx {
         out.push(port);
     }
-    println!("");
     for v in out {
         println!("Port {} is open", v);
     }
+    println!("finished scanning")
 }
-
-// ip_sniffer.exe -h
-// ip_sniffer.exe -j 100 192.168.1.1
-// ip_sniffer 192.168.1.1
-// mpse
-// sync
-// standard and channel
